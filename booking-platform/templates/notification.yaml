@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: booking
+spec:
+  replicas: {{ .Values.notification.replicaCount }}
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+        - name: notification-service
+          image: "{{ .Values.notification.image.repository }}:{{ .Values.notification.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.notification.containerPort }}
+          env:
+            {{- range $k, $v := .Values.notification.env }}
+            - name: {{ $k }}
+              value: "{{ $v }}"
+            {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: booking
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - name: http
+      port: {{ .Values.notification.servicePort }}
+      targetPort: {{ .Values.notification.containerPort }}
+  type: ClusterIP

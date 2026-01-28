@@ -1,0 +1,114 @@
+namespace: booking
+
+notification:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/devops-booking-platform/notification-service
+    tag: develop
+  containerPort: 8080
+  servicePort: 80
+
+  env:
+    ASPNETCORE_ENVIRONMENT: Development
+    RabbitMq__Host: rabbitmq
+    RabbitMq__User: guest
+    RabbitMq__Pass: guest
+    RabbitMq__VirtualHost: /
+    RabbitMq__Exchange: integration
+    Serilog__WriteTo__0__Args__serverUrl: "http://seq:5341"
+
+user:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/devops-booking-platform/user-service
+    tag: develop
+  containerPort: 8080
+  servicePort: 80
+  env:
+    ASPNETCORE_ENVIRONMENT: Development
+    ConnectionStrings__DefaultConnection: "Server=devops-sql,1433;Database=UserServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
+    RabbitMq__Host: rabbitmq
+    RabbitMq__User: guest
+    RabbitMq__Pass: guest
+    RabbitMq__VirtualHost: /
+    RabbitMq__Exchange: integration
+    Services__Reservation__BaseUrl: "http://reservation-service:80"
+
+reservation:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/devops-booking-platform/reservation-service
+    tag: develop
+  containerPort: 8080
+  servicePort: 80
+
+  env:
+    ASPNETCORE_ENVIRONMENT: Development
+    ConnectionStrings__DefaultConnection: "Server=devops-sql,1433;Database=ReservationServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
+    Services__Accommodation__BaseUrl: "http://accommodation-service:80"
+    RabbitMq__Host: rabbitmq
+    RabbitMq__User: guest
+    RabbitMq__Pass: guest
+    RabbitMq__VirtualHost: /
+    RabbitMq__Exchange: integration
+
+accommodation:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/devops-booking-platform/accommodation-service
+    tag: develop
+  containerPort: 8080
+  servicePort: 80
+
+  env:
+    ASPNETCORE_ENVIRONMENT: Development
+    ConnectionStrings__DefaultConnection: "Server=devops-sql,1433;Database=AccommodationServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
+    RabbitMq__Host: rabbitmq
+    RabbitMq__User: guest
+    RabbitMq__Pass: guest
+    RabbitMq__VirtualHost: /
+    RabbitMq__Exchange: integration
+
+mongo:
+  replicaCount: 1
+  image:
+    repository: mongo
+    tag: "7"
+  servicePort: 27017
+  env:
+    MONGO_INITDB_ROOT_USERNAME: root
+    MONGO_INITDB_ROOT_PASSWORD: rootpass
+
+search:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/devops-booking-platform/search-service
+    tag: develop
+  containerPort: 8080
+  servicePort: 80
+  env:
+    ASPNETCORE_ENVIRONMENT: Development
+    Mongo__ConnectionString: "mongodb://root:rootpass@mongo:27017/admin"
+    Mongo__Database: "SearchDb"
+    Mongo__AccommodationsCollection: "Accommodations"
+    RabbitMq__Host: rabbitmq
+    RabbitMq__User: guest
+    RabbitMq__Pass: guest
+    RabbitMq__VirtualHost: /
+    RabbitMq__Exchange: integration
+
+rating:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/devops-booking-platform/rating-service
+    tag: develop
+  containerPort: 8080
+  servicePort: 80
+  env:
+    ASPNETCORE_ENVIRONMENT: Development
+    ConnectionStrings__DefaultConnection: "Server=devops-sql,1433;Database=RatingServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
+    RabbitMq__Host: rabbitmq
+    RabbitMq__User: guest
+    RabbitMq__Pass: guest
+    RabbitMq__VirtualHost: /
+    RabbitMq__Exchange: integration

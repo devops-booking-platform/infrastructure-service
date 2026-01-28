@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: booking
+spec:
+  replicas: {{ .Values.user.replicaCount }}
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: "{{ .Values.user.image.repository }}:{{ .Values.user.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.user.containerPort }}
+          env:
+            {{- range $k, $v := .Values.user.env }}
+            - name: {{ $k }}
+              value: "{{ $v }}"
+            {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: booking
+spec:
+  selector:
+    app: user-service
+  ports:
+    - name: http
+      port: {{ .Values.user.servicePort }}
+      targetPort: {{ .Values.user.containerPort }}
+  type: ClusterIP

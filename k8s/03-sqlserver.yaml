@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sqlserver-secret
+  namespace: booking
+type: Opaque
+stringData:
+  SA_PASSWORD: "Your_Strong_Password123!"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-sql
+  namespace: booking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devops-sql
+  template:
+    metadata:
+      labels:
+        app: devops-sql
+    spec:
+      containers:
+        - name: sqlserver
+          image: mcr.microsoft.com/mssql/server:2022-latest
+          ports:
+            - containerPort: 1433
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: MSSQL_SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sqlserver-secret
+                  key: SA_PASSWORD
+          volumeMounts:
+            - name: mssqldata
+              mountPath: /var/opt/mssql
+      volumes:
+        - name: mssqldata
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-sql
+  namespace: booking
+spec:
+  selector:
+    app: devops-sql
+  ports:
+    - name: sql
+      port: 1433
+      targetPort: 1433
+  type: ClusterIP

@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: accommodation-service
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.accommodation.replicaCount }}
+  selector:
+    matchLabels:
+      app: accommodation-service
+  template:
+    metadata:
+      labels:
+        app: accommodation-service
+    spec:
+      containers:
+        - name: accommodation-service
+          image: "{{ .Values.accommodation.image.repository }}:{{ .Values.accommodation.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.accommodation.containerPort }}
+          env:
+            {{- range $k, $v := .Values.accommodation.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: accommodation-service
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: accommodation-service
+  ports:
+    - name: http
+      port: {{ .Values.accommodation.servicePort }}
+      targetPort: {{ .Values.accommodation.containerPort }}
+  type: ClusterIP

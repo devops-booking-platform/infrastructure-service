@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rating-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: rating-service
+spec:
+  replicas: {{ .Values.rating.replicaCount }}
+  selector:
+    matchLabels:
+      app: rating-service
+  template:
+    metadata:
+      labels:
+        app: rating-service
+    spec:
+      containers:
+        - name: rating-service
+          image: "{{ .Values.rating.image.repository }}:{{ .Values.rating.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.rating.containerPort }}
+          env:
+            {{- range $key, $val := .Values.rating.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rating-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: rating-service
+spec:
+  selector:
+    app: rating-service
+  ports:
+    - name: http
+      port: {{ .Values.rating.servicePort }}
+      targetPort: {{ .Values.rating.containerPort }}
+  type: ClusterIP
