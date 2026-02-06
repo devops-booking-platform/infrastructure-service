@@ -1,5 +1,3 @@
-namespace: booking
-
 notification:
   replicaCount: 1
   image:
@@ -10,12 +8,14 @@ notification:
 
   env:
     ASPNETCORE_ENVIRONMENT: Development
+    ConnectionStrings__DefaultConnection: "Server=devops-sql,1433;Database=NotificationServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
     RabbitMq__Host: rabbitmq
     RabbitMq__User: guest
     RabbitMq__Pass: guest
     RabbitMq__VirtualHost: /
     RabbitMq__Exchange: integration
     Serilog__WriteTo__0__Args__serverUrl: "http://seq:5341"
+
 
 user:
   replicaCount: 1
@@ -112,3 +112,19 @@ rating:
     RabbitMq__Pass: guest
     RabbitMq__VirtualHost: /
     RabbitMq__Exchange: integration
+
+sqlserver:
+  replicaCount: 1
+  image:
+    repository: mcr.microsoft.com/mssql/server
+    tag: "2022-latest"
+  saPassword: "Your_Strong_Password123!"
+  servicePort: 1433
+
+frontend:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/devops-booking-platform/frontend-app
+    tag: develop
+  containerPort: 80
+  servicePort: 80
