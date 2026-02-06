@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ .Values.frontend.containerPort }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    app: frontend
+  ports:
+    - name: http
+      port: {{ .Values.frontend.servicePort }}
+      targetPort: {{ .Values.frontend.containerPort }}
+  type: ClusterIP
