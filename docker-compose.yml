@@ -73,6 +73,14 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
     networks:
       - shared-net
+  
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - shared-net
 networks:
   shared-net:
     external: true
