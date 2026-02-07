@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sqlserver-secret
+  namespace: {{ .Release.Namespace }}
+type: Opaque
+stringData:
+  SA_PASSWORD: {{ .Values.sqlserver.saPassword | quote }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-sql
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.sqlserver.replicaCount }}
+  selector:
+    matchLabels:
+      app: devops-sql
+  template:
+    metadata:
+      labels:
+        app: devops-sql
+    spec:
+      containers:
+        - name: sqlserver
+          image: "{{ .Values.sqlserver.image.repository }}:{{ .Values.sqlserver.image.tag }}"
+          ports:
+            - containerPort: 1433
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: MSSQL_SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sqlserver-secret
+                  key: SA_PASSWORD
+          volumeMounts:
+            - name: mssqldata
+              mountPath: /var/opt/mssql
+      volumes:
+        - name: mssqldata
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-sql
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    app: devops-sql
+  ports:
+    - name: sql
+      port: {{ .Values.sqlserver.servicePort }}
+      targetPort: 1433
+  type: ClusterIP

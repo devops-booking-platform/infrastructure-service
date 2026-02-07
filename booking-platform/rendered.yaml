@@ -1,0 +1,519 @@
+---
+# Source: booking-platform/templates/sqlserver.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sqlserver-secret
+  namespace: booking
+type: Opaque
+stringData:
+  SA_PASSWORD: "Your_Strong_Password123!"
+---
+# Source: booking-platform/templates/accommodation.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: accommodation-service
+  namespace: booking
+spec:
+  selector:
+    app: accommodation-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+---
+# Source: booking-platform/templates/mongo.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  namespace: booking
+spec:
+  selector:
+    app: mongo
+  ports:
+    - name: mongo
+      port: 27017
+      targetPort: 27017
+  type: ClusterIP
+---
+# Source: booking-platform/templates/notification.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: booking
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+---
+# Source: booking-platform/templates/rabbitmq.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  namespace: booking
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+    - name: mgmt
+      port: 15672
+      targetPort: 15672
+  type: ClusterIP
+---
+# Source: booking-platform/templates/rating.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: rating-service
+  namespace: 
+  labels:
+    app: rating-service
+spec:
+  selector:
+    app: rating-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+---
+# Source: booking-platform/templates/reservation.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: reservation-service
+  namespace: 
+spec:
+  selector:
+    app: reservation-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+---
+# Source: booking-platform/templates/search.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: search-service
+  namespace: booking
+spec:
+  selector:
+    app: search-service
+  ports:
+    - port: 80
+      targetPort: 8080
+  type: ClusterIP
+---
+# Source: booking-platform/templates/seq.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: seq
+  namespace: booking
+spec:
+  selector:
+    app: seq
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: ingest
+      port: 5341
+      targetPort: 5341
+  type: ClusterIP
+---
+# Source: booking-platform/templates/sqlserver.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-sql
+  namespace: booking
+spec:
+  selector:
+    app: devops-sql
+  ports:
+    - name: sql
+      port: 1433
+      targetPort: 1433
+  type: ClusterIP
+---
+# Source: booking-platform/templates/user.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: booking
+spec:
+  selector:
+    app: user-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+---
+# Source: booking-platform/templates/accommodation.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: accommodation-service
+  namespace: booking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: accommodation-service
+  template:
+    metadata:
+      labels:
+        app: accommodation-service
+    spec:
+      containers:
+        - name: accommodation-service
+          image: "ghcr.io/devops-booking-platform/accommodation-service:develop"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Development"
+            - name: ConnectionStrings__DefaultConnection
+              value: "Server=devops-sql,1433;Database=AccommodationServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
+            - name: RabbitMq__Exchange
+              value: "integration"
+            - name: RabbitMq__Host
+              value: "rabbitmq"
+            - name: RabbitMq__Pass
+              value: "guest"
+            - name: RabbitMq__User
+              value: "guest"
+            - name: RabbitMq__VirtualHost
+              value: "/"
+---
+# Source: booking-platform/templates/mongo.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  namespace: booking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongo
+          image: "mongo:7"
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: "root"
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: "rootpass"
+---
+# Source: booking-platform/templates/notification.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: booking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+        - name: notification-service
+          image: "ghcr.io/devops-booking-platform/notification-service:develop"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Development"
+            - name: RabbitMq__Exchange
+              value: "integration"
+            - name: RabbitMq__Host
+              value: "rabbitmq"
+            - name: RabbitMq__Pass
+              value: "guest"
+            - name: RabbitMq__User
+              value: "guest"
+            - name: RabbitMq__VirtualHost
+              value: "/"
+            - name: Serilog__WriteTo__0__Args__serverUrl
+              value: "http://seq:5341"
+---
+# Source: booking-platform/templates/rabbitmq.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: booking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3-management
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+---
+# Source: booking-platform/templates/rating.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rating-service
+  namespace: 
+  labels:
+    app: rating-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rating-service
+  template:
+    metadata:
+      labels:
+        app: rating-service
+    spec:
+      containers:
+        - name: rating-service
+          image: "ghcr.io/devops-booking-platform/rating-service:develop"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Development"
+            - name: ConnectionStrings__DefaultConnection
+              value: "Server=devops-sql,1433;Database=RatingServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
+            - name: RabbitMq__Exchange
+              value: "integration"
+            - name: RabbitMq__Host
+              value: "rabbitmq"
+            - name: RabbitMq__Pass
+              value: "guest"
+            - name: RabbitMq__User
+              value: "guest"
+            - name: RabbitMq__VirtualHost
+              value: "/"
+---
+# Source: booking-platform/templates/reservation.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reservation-service
+  namespace: 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reservation-service
+  template:
+    metadata:
+      labels:
+        app: reservation-service
+    spec:
+      containers:
+        - name: reservation-service
+          image: "ghcr.io/devops-booking-platform/reservation-service:develop"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Development"
+            - name: ConnectionStrings__DefaultConnection
+              value: "Server=devops-sql,1433;Database=ReservationServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
+            - name: RabbitMq__Exchange
+              value: "integration"
+            - name: RabbitMq__Host
+              value: "rabbitmq"
+            - name: RabbitMq__Pass
+              value: "guest"
+            - name: RabbitMq__User
+              value: "guest"
+            - name: RabbitMq__VirtualHost
+              value: "/"
+            - name: Services__Accommodation__BaseUrl
+              value: "http://accommodation-service:80"
+---
+# Source: booking-platform/templates/search.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search-service
+  namespace: booking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: search-service
+  template:
+    metadata:
+      labels:
+        app: search-service
+    spec:
+      containers:
+        - name: search-service
+          image: "ghcr.io/devops-booking-platform/search-service:develop"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Development"
+            - name: Mongo__AccommodationsCollection
+              value: "Accommodations"
+            - name: Mongo__ConnectionString
+              value: "mongodb://root:rootpass@mongo:27017/admin"
+            - name: Mongo__Database
+              value: "SearchDb"
+            - name: RabbitMq__Exchange
+              value: "integration"
+            - name: RabbitMq__Host
+              value: "rabbitmq"
+            - name: RabbitMq__Pass
+              value: "guest"
+            - name: RabbitMq__User
+              value: "guest"
+            - name: RabbitMq__VirtualHost
+              value: "/"
+---
+# Source: booking-platform/templates/seq.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seq
+  namespace: booking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seq
+  template:
+    metadata:
+      labels:
+        app: seq
+    spec:
+      containers:
+        - name: seq
+          image: datalust/seq:latest
+          ports:
+            - containerPort: 80
+            - containerPort: 5341
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: SEQ_FIRSTRUN_NOAUTHENTICATION
+              value: "true"
+---
+# Source: booking-platform/templates/sqlserver.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-sql
+  namespace: booking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devops-sql
+  template:
+    metadata:
+      labels:
+        app: devops-sql
+    spec:
+      containers:
+        - name: sqlserver
+          image: "mcr.microsoft.com/mssql/server:2022-latest"
+          ports:
+            - containerPort: 1433
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: MSSQL_SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sqlserver-secret
+                  key: SA_PASSWORD
+          volumeMounts:
+            - name: mssqldata
+              mountPath: /var/opt/mssql
+      volumes:
+        - name: mssqldata
+          emptyDir: {}
+---
+# Source: booking-platform/templates/user.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: booking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: "ghcr.io/devops-booking-platform/user-service:develop"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Development"
+            - name: ConnectionStrings__DefaultConnection
+              value: "Server=devops-sql,1433;Database=UserServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
+            - name: RabbitMq__Exchange
+              value: "integration"
+            - name: RabbitMq__Host
+              value: "rabbitmq"
+            - name: RabbitMq__Pass
+              value: "guest"
+            - name: RabbitMq__User
+              value: "guest"
+            - name: RabbitMq__VirtualHost
+              value: "/"
+            - name: Services__Reservation__BaseUrl
+              value: "http://reservation-service:80"

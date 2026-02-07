@@ -2,7 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mongo
-  namespace: {{ .Values.namespace }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: mongo
 spec:
   replicas: {{ .Values.mongo.replicaCount }}
   selector:
@@ -20,19 +22,25 @@ spec:
             - containerPort: 27017
           env:
             - name: MONGO_INITDB_ROOT_USERNAME
-              value: "{{ .Values.mongo.env.MONGO_INITDB_ROOT_USERNAME }}"
+              value: {{ .Values.mongo.env.MONGO_INITDB_ROOT_USERNAME | quote }}
             - name: MONGO_INITDB_ROOT_PASSWORD
-              value: "{{ .Values.mongo.env.MONGO_INITDB_ROOT_PASSWORD }}"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.name }}
+                  key: MONGO_ROOT_PASSWORD
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: mongo
-  namespace: {{ .Values.namespace }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: mongo
 spec:
   selector:
     app: mongo
   ports:
-    - port: {{ .Values.mongo.servicePort }}
+    - name: mongo
+      port: {{ .Values.mongo.servicePort }}
       targetPort: 27017
   type: ClusterIP
