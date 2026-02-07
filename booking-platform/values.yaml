@@ -5,6 +5,7 @@ notification:
     tag: develop
   containerPort: 8080
   servicePort: 80
+  OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
 
   env:
     ASPNETCORE_ENVIRONMENT: Development
@@ -24,6 +25,7 @@ user:
     tag: develop
   containerPort: 8080
   servicePort: 80
+  OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
   env:
     ASPNETCORE_ENVIRONMENT: Development
     ConnectionStrings__DefaultConnection: "Server=devops-sql,1433;Database=UserServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
@@ -41,6 +43,7 @@ reservation:
     tag: develop
   containerPort: 8080
   servicePort: 80
+  OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
 
   env:
     ASPNETCORE_ENVIRONMENT: Development
@@ -59,6 +62,7 @@ accommodation:
     tag: develop
   containerPort: 8080
   servicePort: 80
+  OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
 
   env:
     ASPNETCORE_ENVIRONMENT: Development
@@ -86,6 +90,7 @@ search:
     tag: develop
   containerPort: 8080
   servicePort: 80
+  OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
   env:
     ASPNETCORE_ENVIRONMENT: Development
     Mongo__ConnectionString: "mongodb://root:rootpass@mongo:27017/admin"
@@ -104,6 +109,7 @@ rating:
     tag: develop
   containerPort: 8080
   servicePort: 80
+  OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
   env:
     ASPNETCORE_ENVIRONMENT: Development
     ConnectionStrings__DefaultConnection: "Server=devops-sql,1433;Database=RatingServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
@@ -122,9 +128,17 @@ sqlserver:
   servicePort: 1433
 
 frontend:
-  replicaCount: 1
   image:
-    repository: ghcr.io/devops-booking-platform/frontend-app
-    tag: develop
+    repository: frontend-app
+    tag: "tagg1" 
   containerPort: 80
   servicePort: 80
+
+jaeger:
+  enabled: true
+  image:
+    repository: jaegertracing/all-in-one
+    tag: "1.54"
+  servicePort: 16686   # UI
+  otlpGrpcPort: 4317   # OTLP gRPC
+  otlpHttpPort: 4318   # OTLP HTTP
