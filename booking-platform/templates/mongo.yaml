@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: mongo
   namespace: {{ .Release.Namespace }}
+  labels:
+    app: mongo
 spec:
   replicas: {{ .Values.mongo.replicaCount }}
   selector:
@@ -22,13 +24,18 @@ spec:
             - name: MONGO_INITDB_ROOT_USERNAME
               value: {{ .Values.mongo.env.MONGO_INITDB_ROOT_USERNAME | quote }}
             - name: MONGO_INITDB_ROOT_PASSWORD
-              value: {{ .Values.mongo.env.MONGO_INITDB_ROOT_PASSWORD | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.name }}
+                  key: MONGO_ROOT_PASSWORD
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: mongo
   namespace: {{ .Release.Namespace }}
+  labels:
+    app: mongo
 spec:
   selector:
     app: mongo

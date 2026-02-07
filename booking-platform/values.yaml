@@ -1,3 +1,6 @@
+secrets:
+  name: devops-secrets
+
 notification:
   replicaCount: 1
   image:
@@ -5,18 +8,13 @@ notification:
     tag: develop
   containerPort: 8080
   servicePort: 80
-  OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
-
   env:
     ASPNETCORE_ENVIRONMENT: Development
-    ConnectionStrings__DefaultConnection: "Server=devops-sql,1433;Database=NotificationServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
     RabbitMq__Host: rabbitmq
-    RabbitMq__User: guest
-    RabbitMq__Pass: guest
     RabbitMq__VirtualHost: /
     RabbitMq__Exchange: integration
     Serilog__WriteTo__0__Args__serverUrl: "http://seq:5341"
-
+    OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
 
 user:
   replicaCount: 1
@@ -25,16 +23,13 @@ user:
     tag: develop
   containerPort: 8080
   servicePort: 80
-  OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
   env:
     ASPNETCORE_ENVIRONMENT: Development
-    ConnectionStrings__DefaultConnection: "Server=devops-sql,1433;Database=UserServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
     RabbitMq__Host: rabbitmq
-    RabbitMq__User: guest
-    RabbitMq__Pass: guest
     RabbitMq__VirtualHost: /
     RabbitMq__Exchange: integration
     Services__Reservation__BaseUrl: "http://reservation-service:80"
+    OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
 
 reservation:
   replicaCount: 1
@@ -43,17 +38,13 @@ reservation:
     tag: develop
   containerPort: 8080
   servicePort: 80
-  OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
-
   env:
     ASPNETCORE_ENVIRONMENT: Development
-    ConnectionStrings__DefaultConnection: "Server=devops-sql,1433;Database=ReservationServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
     Services__Accommodation__BaseUrl: "http://accommodation-service:80"
     RabbitMq__Host: rabbitmq
-    RabbitMq__User: guest
-    RabbitMq__Pass: guest
     RabbitMq__VirtualHost: /
     RabbitMq__Exchange: integration
+    OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
 
 accommodation:
   replicaCount: 1
@@ -62,16 +53,12 @@ accommodation:
     tag: develop
   containerPort: 8080
   servicePort: 80
-  OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
-
   env:
     ASPNETCORE_ENVIRONMENT: Development
-    ConnectionStrings__DefaultConnection: "Server=devops-sql,1433;Database=AccommodationServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
     RabbitMq__Host: rabbitmq
-    RabbitMq__User: guest
-    RabbitMq__Pass: guest
     RabbitMq__VirtualHost: /
     RabbitMq__Exchange: integration
+    OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
 
 mongo:
   replicaCount: 1
@@ -81,7 +68,6 @@ mongo:
   servicePort: 27017
   env:
     MONGO_INITDB_ROOT_USERNAME: root
-    MONGO_INITDB_ROOT_PASSWORD: rootpass
 
 search:
   replicaCount: 1
@@ -90,17 +76,14 @@ search:
     tag: develop
   containerPort: 8080
   servicePort: 80
-  OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
   env:
     ASPNETCORE_ENVIRONMENT: Development
-    Mongo__ConnectionString: "mongodb://root:rootpass@mongo:27017/admin"
     Mongo__Database: "SearchDb"
     Mongo__AccommodationsCollection: "Accommodations"
     RabbitMq__Host: rabbitmq
-    RabbitMq__User: guest
-    RabbitMq__Pass: guest
     RabbitMq__VirtualHost: /
     RabbitMq__Exchange: integration
+    OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
 
 rating:
   replicaCount: 1
@@ -109,28 +92,25 @@ rating:
     tag: develop
   containerPort: 8080
   servicePort: 80
-  OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
   env:
     ASPNETCORE_ENVIRONMENT: Development
-    ConnectionStrings__DefaultConnection: "Server=devops-sql,1433;Database=RatingServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
     RabbitMq__Host: rabbitmq
-    RabbitMq__User: guest
-    RabbitMq__Pass: guest
     RabbitMq__VirtualHost: /
     RabbitMq__Exchange: integration
+    OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
 
 sqlserver:
   replicaCount: 1
   image:
     repository: mcr.microsoft.com/mssql/server
     tag: "2022-latest"
-  saPassword: "Your_Strong_Password123!"
   servicePort: 1433
 
 frontend:
+  replicaCount: 1
   image:
-    repository: frontend-app
-    tag: "tagg1" 
+    repository: ghcr.io/devops-booking-platform/frontend-app
+    tag: develop
   containerPort: 80
   servicePort: 80
 

@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: accommodation-service
   namespace: {{ .Release.Namespace }}
+  labels:
+    app: accommodation-service
 spec:
   replicas: {{ .Values.accommodation.replicaCount }}
   selector:
@@ -24,12 +26,31 @@ spec:
             - name: {{ $k }}
               value: {{ $v | quote }}
             {{- end }}
+
+            - name: RabbitMq__User
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: RABBITMQ_USER
+            - name: RabbitMq__Pass
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: RABBITMQ_PASS
+
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: CONNSTR_ACCOMMODATION
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: accommodation-service
   namespace: {{ .Release.Namespace }}
+  labels:
+    app: accommodation-service
 spec:
   selector:
     app: accommodation-service

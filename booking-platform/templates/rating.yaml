@@ -27,6 +27,22 @@ spec:
               value: {{ $val | quote }}
             {{- end }}
 
+            - name: RabbitMq__User
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: RABBITMQ_USER
+            - name: RabbitMq__Pass
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: RABBITMQ_PASS
+
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: CONNSTR_RATING
 ---
 apiVersion: v1
 kind: Service
