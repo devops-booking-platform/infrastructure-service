@@ -2,7 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: reservation-service
-  namespace: {{ .Values.namespace }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: reservation-service
 spec:
   replicas: {{ .Values.reservation.replicaCount }}
   selector:
@@ -24,12 +26,31 @@ spec:
             - name: {{ $k }}
               value: {{ $v | quote }}
             {{- end }}
+
+            - name: RabbitMq__User
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: RABBITMQ_USER
+            - name: RabbitMq__Pass
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: RABBITMQ_PASS
+
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: CONNSTR_RESERVATION
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: reservation-service
-  namespace: {{ .Values.namespace }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: reservation-service
 spec:
   selector:
     app: reservation-service

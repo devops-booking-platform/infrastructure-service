@@ -2,7 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: search-service
-  namespace: {{ .Values.namespace }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: search-service
 spec:
   replicas: {{ .Values.search.replicaCount }}
   selector:
@@ -22,18 +24,38 @@ spec:
           env:
             {{- range $k, $v := .Values.search.env }}
             - name: {{ $k }}
-              value: "{{ $v }}"
+              value: {{ $v | quote }}
             {{- end }}
+
+            - name: Mongo__ConnectionString
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: MONGO_CONN_SEARCH
+
+            - name: RabbitMq__User
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: RABBITMQ_USER
+            - name: RabbitMq__Pass
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: RABBITMQ_PASS
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: search-service
-  namespace: {{ .Values.namespace }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: search-service
 spec:
   selector:
     app: search-service
   ports:
-    - port: {{ .Values.search.servicePort }}
+    - name: http
+      port: {{ .Values.search.servicePort }}
       targetPort: {{ .Values.search.containerPort }}
   type: ClusterIP
