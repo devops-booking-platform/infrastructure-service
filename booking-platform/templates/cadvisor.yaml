@@ -20,13 +20,15 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+          securityContext:
+            privileged: true
           volumeMounts:
             - name: rootfs
               mountPath: /rootfs
               readOnly: true
             - name: var-run
               mountPath: /var/run
-              readOnly: true
+              readOnly: false
             - name: sys
               mountPath: /sys
               readOnly: true
@@ -38,7 +40,7 @@ spec:
               readOnly: true
           args:
             - --housekeeping_interval=10s
-            - --docker_only=true
+            - --docker_only=false
       volumes:
         - name: rootfs
           hostPath:
