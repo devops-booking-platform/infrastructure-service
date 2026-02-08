@@ -214,8 +214,8 @@ data:
           "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
           "targets": [
             {
-              "expr": "sum by (id) (container_fs_usage_bytes{id=~\"/docker/.*\"})",
-              "legendFormat": "{{ "{{" }}id{{ "}}" }}",
+              "expr": "container_fs_usage_bytes{id=\"/\",device=\"/dev/sdd\"}",
+              "legendFormat": "Root filesystem",
               "refId": "A"
             }
           ],
@@ -233,13 +233,13 @@ data:
           "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
           "targets": [
             {
-              "expr": "sum by (id) (rate(container_network_receive_bytes_total{id=~\"/docker/.*\"}[5m]))",
-              "legendFormat": "{{ "{{" }}id{{ "}}" }} rx",
+              "expr": "sum(rate(container_network_receive_bytes_total{id=\"/\"}[5m]))",
+              "legendFormat": "Receive",
               "refId": "A"
             },
             {
-              "expr": "sum by (id) (rate(container_network_transmit_bytes_total{id=~\"/docker/.*\"}[5m]))",
-              "legendFormat": "{{ "{{" }}id{{ "}}" }} tx",
+              "expr": "sum(rate(container_network_transmit_bytes_total{id=\"/\"}[5m]))",
+              "legendFormat": "Transmit",
               "refId": "B"
             }
           ],
