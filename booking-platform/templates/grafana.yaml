@@ -11,6 +11,7 @@ data:
         type: prometheus
         access: proxy
         url: http://prometheus:{{ .Values.prometheus.servicePort }}
+        uid: Prometheus
         isDefault: true
         editable: false
 ---
@@ -170,13 +171,13 @@ data:
             "defaults": { "color": { "mode": "palette-classic" }, "unit": "cores" },
             "overrides": []
           },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
           "id": 5,
           "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
           "targets": [
             {
-              "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{container!=\"\",name!=\"\"}[5m]))",
-              "legendFormat": "{{ "{{" }}name{{ "}}" }}",
+              "expr": "sum by (id) (rate(container_cpu_usage_seconds_total{id=~\"/docker/.*\"}[5m]))",
+              "legendFormat": "{{ "{{" }}id{{ "}}" }}",
               "refId": "A"
             }
           ],
@@ -194,12 +195,55 @@ data:
           "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
           "targets": [
             {
-              "expr": "sum by (name) (container_memory_working_set_bytes{container!=\"\",name!=\"\"})",
-              "legendFormat": "{{ "{{" }}name{{ "}}" }}",
+              "expr": "sum by (id) (container_memory_working_set_bytes{id=~\"/docker/.*\"})",
+              "legendFormat": "{{ "{{" }}id{{ "}}" }}",
               "refId": "A"
             }
           ],
           "title": "Container Memory Usage",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "fieldConfig": {
+            "defaults": { "color": { "mode": "palette-classic" }, "unit": "bytes" },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+          "id": 7,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "sum by (id) (container_fs_usage_bytes{id=~\"/docker/.*\"})",
+              "legendFormat": "{{ "{{" }}id{{ "}}" }}",
+              "refId": "A"
+            }
+          ],
+          "title": "Container Filesystem Usage",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "fieldConfig": {
+            "defaults": { "color": { "mode": "palette-classic" }, "unit": "Bps" },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+          "id": 8,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "sum by (id) (rate(container_network_receive_bytes_total{id=~\"/docker/.*\"}[5m]))",
+              "legendFormat": "{{ "{{" }}id{{ "}}" }} rx",
+              "refId": "A"
+            },
+            {
+              "expr": "sum by (id) (rate(container_network_transmit_bytes_total{id=~\"/docker/.*\"}[5m]))",
+              "legendFormat": "{{ "{{" }}id{{ "}}" }} tx",
+              "refId": "B"
+            }
+          ],
+          "title": "Container Network Throughput",
           "type": "timeseries"
         }
       ],
