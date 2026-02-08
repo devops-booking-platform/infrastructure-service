@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 type: Opaque
 stringData:
-  SA_PASSWORD: {{ .Values.sqlserver.saPassword | quote }}
+  SA_PASSWORD: {{ .Values.secrets.sqlserver.saPassword | quote }}
 ---
 apiVersion: apps/v1
 kind: Deployment
