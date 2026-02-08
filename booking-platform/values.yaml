@@ -15,6 +15,9 @@ notification:
     RabbitMq__Exchange: integration
     Serilog__WriteTo__0__Args__serverUrl: "http://seq:5341"
     OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
+    Redis__Host: redis
+    Redis__Port: "6379"
+    Redis__Password: ""
 
 user:
   replicaCount: 1
@@ -30,6 +33,9 @@ user:
     RabbitMq__Exchange: integration
     Services__Reservation__BaseUrl: "http://reservation-service:80"
     OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
+    Redis__Host: redis
+    Redis__Port: "6379"
+    Redis__Password: ""
 
 reservation:
   replicaCount: 1
@@ -45,6 +51,9 @@ reservation:
     RabbitMq__VirtualHost: /
     RabbitMq__Exchange: integration
     OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
+    Redis__Host: redis
+    Redis__Port: "6379"
+    Redis__Password: ""
 
 accommodation:
   replicaCount: 1
@@ -59,6 +68,9 @@ accommodation:
     RabbitMq__VirtualHost: /
     RabbitMq__Exchange: integration
     OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
+    Redis__Host: redis
+    Redis__Port: "6379"
+    Redis__Password: ""
 
 mongo:
   replicaCount: 1
@@ -68,6 +80,14 @@ mongo:
   servicePort: 27017
   env:
     MONGO_INITDB_ROOT_USERNAME: root
+
+redis:
+  replicaCount: 1
+  image:
+    repository: redis
+    tag: "7-alpine"
+  servicePort: 6379
+  password: false  # Set to true if using password from secrets
 
 search:
   replicaCount: 1
@@ -84,6 +104,9 @@ search:
     RabbitMq__VirtualHost: /
     RabbitMq__Exchange: integration
     OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
+    Redis__Host: redis
+    Redis__Port: "6379"
+    Redis__Password: ""
 
 rating:
   replicaCount: 1
@@ -98,6 +121,9 @@ rating:
     RabbitMq__VirtualHost: /
     RabbitMq__Exchange: integration
     OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
+    Redis__Host: redis
+    Redis__Port: "6379"
+    Redis__Password: ""
 
 sqlserver:
   replicaCount: 1
@@ -122,3 +148,22 @@ jaeger:
   servicePort: 16686   # UI
   otlpGrpcPort: 4317   # OTLP gRPC
   otlpHttpPort: 4318   # OTLP HTTP
+
+prometheus:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: prom/prometheus
+    tag: "v2.48.0"
+  servicePort: 9090
+  scrapeInterval: 5s
+
+grafana:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: grafana/grafana
+    tag: "10.2.3"
+  servicePort: 3000
+  adminUser: admin
+  adminPassword: admin

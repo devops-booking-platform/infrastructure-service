@@ -88,6 +88,33 @@ kubectl get namespaces
 
 ---
 
+## Infrastructure Components
+
+This Helm chart deploys the following components:
+
+### Microservices
+- **user-service** - User authentication and management
+- **reservation-service** - Booking reservations
+- **accommodation-service** - Accommodation management
+- **rating-service** - Ratings and reviews
+- **search-service** - Search functionality
+- **notification-service** - Notifications
+- **frontend** - Angular application
+
+### Databases & Storage
+- **SQL Server** - Relational database for microservices
+- **MongoDB** - NoSQL database for search service
+- **Redis** - In-memory cache for visitor tracking and session management
+
+### Infrastructure Services
+- **RabbitMQ** - Message broker for event-driven communication
+- **Seq** - Centralized logging
+- **Jaeger** - Distributed tracing
+- **Prometheus** - Metrics collection and monitoring
+- **Grafana** - Metrics visualization and dashboards
+
+---
+
 ## Secrets Configuration (Required)
 
 A secrets file is required to run the system locally.
@@ -166,6 +193,8 @@ kubectl get pods -n booking
 127.0.0.1 kubernetes.docker.internal
 127.0.0.1 seq.booking.local
 127.0.0.1 jaeger.booking.local
+127.0.0.1 prometheus.booking.local
+127.0.0.1 grafana.booking.local
 ```
 
 4. Save the file
@@ -183,6 +212,8 @@ minikube tunnel
 - **Frontend:** http://booking.local
 - **Seq:** http://seq.booking.local
 - **Jaeger:** http://jaeger.booking.local
+- **Prometheus:** http://prometheus.booking.local
+- **Grafana:** http://grafana.booking.local (login: admin/admin)
 
 ### Without Ingress
 

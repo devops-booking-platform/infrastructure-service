@@ -128,3 +128,25 @@ spec:
                 name: jaeger
                 port:
                   number: 80
+
+    - host: prometheus.booking.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus
+                port:
+                  number: {{ .Values.prometheus.servicePort }}
+
+    - host: grafana.booking.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana
+                port:
+                  number: {{ .Values.grafana.servicePort }}

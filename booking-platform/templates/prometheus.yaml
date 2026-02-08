@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: {{ .Release.Namespace }}
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: {{ .Values.prometheus.scrapeInterval }}
+
+    scrape_configs:
+      - job_name: "prometheus"
+        static_configs:
+          - targets: ["localhost:9090"]
+
+      - job_name: "rating-service"
+        static_configs:
+          - targets: ["rating-service:{{ .Values.rating.servicePort }}"]
+
+      - job_name: "accommodation-service"
+        static_configs:
+          - targets: ["accommodation-service:{{ .Values.accommodation.servicePort }}"]
+
+      - job_name: "reservation-service"
+        static_configs:
+          - targets: ["reservation-service:{{ .Values.reservation.servicePort }}"]
+
+      - job_name: "search-service"
+        static_configs:
+          - targets: ["search-service:{{ .Values.search.servicePort }}"]
+
+      - job_name: "user-service"
+        static_configs:
+          - targets: ["user-service:{{ .Values.user.servicePort }}"]
+
+      - job_name: "notification-service"
+        static_configs:
+          - targets: ["notification-service:{{ .Values.notification.servicePort }}"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.prometheus.replicaCount }}
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: "{{ .Values.prometheus.image.repository }}:{{ .Values.prometheus.image.tag }}"
+          ports:
+            - name: http
+              containerPort: 9090
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+            - name: storage
+              mountPath: /prometheus
+          args:
+            - '--config.file=/etc/prometheus/prometheus.yml'
+            - '--storage.tsdb.path=/prometheus'
+            - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+            - '--web.console.templates=/usr/share/prometheus/consoles'
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+        - name: storage
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    app: prometheus
+  ports:
+    - name: http
+      port: {{ .Values.prometheus.servicePort }}
+      targetPort: 9090
+  type: ClusterIP
