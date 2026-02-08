@@ -18,7 +18,7 @@ spec:
       containers:
         - name: accommodation-service
           image: "{{ .Values.accommodation.image.repository }}:{{ .Values.accommodation.image.tag }}"
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: {{ .Values.accommodation.containerPort }}
           env:
