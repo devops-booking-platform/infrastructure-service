@@ -23,14 +23,22 @@ data:
   dashboard.yml: |
     apiVersion: 1
     providers:
-      - name: 'default'
+      - name: 'infrastructure'
         orgId: 1
-        folder: ''
+        folder: 'Infrastructure'
         type: file
         disableDeletion: false
         editable: true
         options:
           path: /var/lib/grafana/dashboards
+      - name: 'web-traffic'
+        orgId: 1
+        folder: 'Web Traffic'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/web
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -242,6 +250,8 @@ spec:
               mountPath: /etc/grafana/provisioning/dashboards
             - name: dashboards
               mountPath: /var/lib/grafana/dashboards
+            - name: web-traffic-dashboard
+              mountPath: /var/lib/grafana/dashboards/web
       volumes:
         - name: datasources
           configMap:
@@ -252,6 +262,9 @@ spec:
         - name: dashboards
           configMap:
             name: grafana-dashboards
+        - name: web-traffic-dashboard
+          configMap:
+            name: grafana-web-traffic-dashboard
 ---
 apiVersion: v1
 kind: Service
