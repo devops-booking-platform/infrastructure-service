@@ -101,7 +101,7 @@ data:
           "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
           "targets": [
             {
-              "expr": "unique_visitors_total",
+              "expr": "sum(unique_visitors_total)",
               "legendFormat": "Visitors",
               "refId": "A"
             }
@@ -126,7 +126,7 @@ data:
           "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
           "targets": [
             {
-              "expr": "sum(increase(http_response_size_bytes_sum[24h])) / 1073741824",
+              "expr": "sum(increase(prometheus_http_response_size_bytes_sum[24h])) / 1024 / 1024 / 1024",
               "legendFormat": "Traffic GB",
               "refId": "A"
             }
