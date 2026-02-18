@@ -28,6 +28,16 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secrets.name }}
                   key: MONGO_ROOT_PASSWORD
+          volumeMounts:
+            - name: mongo-storage
+              mountPath: /data/db
+          volumeMounts:
+            - name: mongo-storage
+              mountPath: /data/db
+      volumes:
+        - name: mongo-storage
+          persistentVolumeClaim:
+            claimName: mongo-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -44,3 +54,16 @@ spec:
       port: {{ .Values.mongo.servicePort }}
       targetPort: 27017
   type: ClusterIP
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-pvc
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
