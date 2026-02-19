@@ -117,6 +117,7 @@ rating:
   servicePort: 80
   env:
     ASPNETCORE_ENVIRONMENT: Development
+    Services__Accommodation__BaseUrl: "http://accommodation-service:80"
     RabbitMq__Host: rabbitmq
     RabbitMq__VirtualHost: /
     RabbitMq__Exchange: integration

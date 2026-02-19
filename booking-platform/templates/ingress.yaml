@@ -63,7 +63,7 @@ spec:
                 port:
                   number: 80
 
-          # search-service  (swagger ti kaže /api/search)
+          # search-service
           - path: /api/search(/|$).*
             pathType: ImplementationSpecific
             backend:
