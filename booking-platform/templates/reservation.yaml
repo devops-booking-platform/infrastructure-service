@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reservation-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: reservation-service
+spec:
+  replicas: {{ .Values.reservation.replicaCount }}
+  selector:
+    matchLabels:
+      app: reservation-service
+  template:
+    metadata:
+      labels:
+        app: reservation-service
+    spec:
+      containers:
+        - name: reservation-service
+          image: "{{ .Values.reservation.image.repository }}:{{ .Values.reservation.image.tag }}"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ .Values.reservation.containerPort }}
+          env:
+            {{- range $k, $v := .Values.reservation.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+
+            - name: RabbitMq__User
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: RABBITMQ_USER
+            - name: RabbitMq__Pass
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: RABBITMQ_PASS
+
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: CONNSTR_RESERVATION
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reservation-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: reservation-service
+spec:
+  selector:
+    app: reservation-service
+  ports:
+    - name: http
+      port: {{ .Values.reservation.servicePort }}
+      targetPort: {{ .Values.reservation.containerPort }}
+  type: ClusterIP

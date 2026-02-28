@@ -1,0 +1,170 @@
+secrets:
+  name: devops-secrets
+
+notification:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/devops-booking-platform/notification-service
+    tag: develop
+  containerPort: 8080
+  servicePort: 80
+  env:
+    ASPNETCORE_ENVIRONMENT: Development
+    RabbitMq__Host: rabbitmq
+    RabbitMq__VirtualHost: /
+    RabbitMq__Exchange: integration
+    Serilog__WriteTo__0__Args__serverUrl: "http://seq:5341"
+    OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
+    Redis__Host: redis
+    Redis__Port: "6379"
+    Redis__Password: ""
+
+user:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/devops-booking-platform/user-service
+    tag: develop
+  containerPort: 8080
+  servicePort: 80
+  env:
+    ASPNETCORE_ENVIRONMENT: Development
+    RabbitMq__Host: rabbitmq
+    RabbitMq__VirtualHost: /
+    RabbitMq__Exchange: integration
+    Services__Reservation__BaseUrl: "http://reservation-service:80"
+    OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
+    Redis__Host: redis
+    Redis__Port: "6379"
+    Redis__Password: ""
+
+reservation:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/devops-booking-platform/reservation-service
+    tag: develop
+  containerPort: 8080
+  servicePort: 80
+  env:
+    ASPNETCORE_ENVIRONMENT: Development
+    Services__Accommodation__BaseUrl: "http://accommodation-service:80"
+    RabbitMq__Host: rabbitmq
+    RabbitMq__VirtualHost: /
+    RabbitMq__Exchange: integration
+    OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
+    Redis__Host: redis
+    Redis__Port: "6379"
+    Redis__Password: ""
+
+accommodation:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/devops-booking-platform/accommodation-service
+    tag: develop
+  containerPort: 8080
+  servicePort: 80
+  env:
+    ASPNETCORE_ENVIRONMENT: Development
+    RabbitMq__Host: rabbitmq
+    RabbitMq__VirtualHost: /
+    RabbitMq__Exchange: integration
+    OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
+    Redis__Host: redis
+    Redis__Port: "6379"
+    Redis__Password: ""
+
+mongo:
+  replicaCount: 1
+  image:
+    repository: mongo
+    tag: "7"
+  servicePort: 27017
+  env:
+    MONGO_INITDB_ROOT_USERNAME: root
+
+redis:
+  replicaCount: 1
+  image:
+    repository: redis
+    tag: "7-alpine"
+  servicePort: 6379
+  password: false  # Set to true if using password from secrets
+
+search:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/devops-booking-platform/search-service
+    tag: develop
+  containerPort: 8080
+  servicePort: 80
+  env:
+    ASPNETCORE_ENVIRONMENT: Development
+    Mongo__Database: "SearchDb"
+    Mongo__AccommodationsCollection: "Accommodations"
+    RabbitMq__Host: rabbitmq
+    RabbitMq__VirtualHost: /
+    RabbitMq__Exchange: integration
+    OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
+    Redis__Host: redis
+    Redis__Port: "6379"
+    Redis__Password: ""
+
+rating:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/devops-booking-platform/rating-service
+    tag: develop
+  containerPort: 8080
+  servicePort: 80
+  env:
+    ASPNETCORE_ENVIRONMENT: Development
+    Services__Accommodation__BaseUrl: "http://accommodation-service:80"
+    RabbitMq__Host: rabbitmq
+    RabbitMq__VirtualHost: /
+    RabbitMq__Exchange: integration
+    OpenTelemetry__OtlpExporter__Endpoint: "http://jaeger:4317"
+    Redis__Host: redis
+    Redis__Port: "6379"
+    Redis__Password: ""
+
+sqlserver:
+  replicaCount: 1
+  image:
+    repository: mcr.microsoft.com/mssql/server
+    tag: "2022-latest"
+  servicePort: 1433
+
+frontend:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/devops-booking-platform/frontend-app
+    tag: develop
+  containerPort: 80
+  servicePort: 80
+
+jaeger:
+  enabled: true
+  image:
+    repository: jaegertracing/all-in-one
+    tag: "1.54"
+  servicePort: 16686   # UI
+  otlpGrpcPort: 4317   # OTLP gRPC
+  otlpHttpPort: 4318   # OTLP HTTP
+
+prometheus:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: prom/prometheus
+    tag: "v2.48.0"
+  servicePort: 9090
+  scrapeInterval: 5s
+
+grafana:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: grafana/grafana
+    tag: "10.2.3"
+  servicePort: 3000
+  adminUser: admin
+  adminPassword: admin

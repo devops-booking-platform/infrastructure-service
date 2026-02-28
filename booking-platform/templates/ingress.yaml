@@ -1,0 +1,152 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: booking-ingress
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: booking.local
+      http:
+        paths:
+          # user-service
+          - path: /api/auth(/|$).*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 80
+
+          # accommodation-service
+          - path: /api/accommodations(/|$).*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: accommodation-service
+                port:
+                  number: 80
+
+          - path: /api/availability(/|$).*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: accommodation-service
+                port:
+                  number: 80
+
+          # rating-service
+          - path: /api/host-ratings(/|$).*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: rating-service
+                port:
+                  number: 80
+
+          - path: /api/accommodation-ratings(/|$).*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: rating-service
+                port:
+                  number: 80
+
+          # reservation-service
+          - path: /api/reservations(/|$).*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: reservation-service
+                port:
+                  number: 80
+
+          # search-service
+          - path: /api/search(/|$).*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: search-service
+                port:
+                  number: 80
+
+          # notification-service
+          - path: /api/notification(/|$).*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 80
+
+          - path: /api/notification-disabled(/|$).*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 80
+
+          # hub
+          - path: /notificationHub(/|$).*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 80
+          
+          # Frontend (Angular) - MUST be last
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: {{ .Values.frontend.servicePort }}
+
+    - host: seq.booking.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: seq
+                port:
+                  number: 80
+                  
+    - host: jaeger.booking.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: jaeger
+                port:
+                  number: 80
+
+    - host: prometheus.booking.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus
+                port:
+                  number: {{ .Values.prometheus.servicePort }}
+
+    - host: grafana.booking.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana
+                port:
+                  number: {{ .Values.grafana.servicePort }}

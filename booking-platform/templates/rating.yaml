@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rating-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: rating-service
+spec:
+  replicas: {{ .Values.rating.replicaCount }}
+  selector:
+    matchLabels:
+      app: rating-service
+  template:
+    metadata:
+      labels:
+        app: rating-service
+    spec:
+      containers:
+        - name: rating-service
+          image: "{{ .Values.rating.image.repository }}:{{ .Values.rating.image.tag }}"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ .Values.rating.containerPort }}
+          env:
+            {{- range $key, $val := .Values.rating.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
+
+            - name: RabbitMq__User
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: RABBITMQ_USER
+            - name: RabbitMq__Pass
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: RABBITMQ_PASS
+
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.name }}
+                  key: CONNSTR_RATING
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rating-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: rating-service
+spec:
+  selector:
+    app: rating-service
+  ports:
+    - name: http
+      port: {{ .Values.rating.servicePort }}
+      targetPort: {{ .Values.rating.containerPort }}
+  type: ClusterIP
