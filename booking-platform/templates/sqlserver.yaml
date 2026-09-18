@@ -14,6 +14,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.sqlserver.replicaCount }}
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: devops-sql
@@ -22,6 +24,8 @@ spec:
       labels:
         app: devops-sql
     spec:
+      securityContext:
+        fsGroup: 10001
       containers:
         - name: sqlserver
           image: "{{ .Values.sqlserver.image.repository }}:{{ .Values.sqlserver.image.tag }}"
@@ -40,7 +44,8 @@ spec:
               mountPath: /var/opt/mssql
       volumes:
         - name: mssqldata
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: sqlserver-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -55,3 +60,15 @@ spec:
       port: {{ .Values.sqlserver.servicePort }}
       targetPort: 1433
   type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sqlserver-pvc
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.sqlserver.persistence.size | quote }}

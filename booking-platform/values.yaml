@@ -127,11 +127,13 @@ rating:
     Redis__Password: ""
 
 sqlserver:
-  replicaCount: 1
+  replicaCount: 1 # Standalone SQL Server: keep one replica on this data volume.
   image:
     repository: mcr.microsoft.com/mssql/server
     tag: "2022-latest"
   servicePort: 1433
+  persistence:
+    size: 4Gi
 
 frontend:
   replicaCount: 1
