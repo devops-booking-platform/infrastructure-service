@@ -16,6 +16,7 @@ spec:
   replicas: {{ .Values.sqlserver.replicaCount }}
   strategy:
     type: Recreate
+    rollingUpdate: null
   selector:
     matchLabels:
       app: devops-sql

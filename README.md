@@ -58,6 +58,27 @@ helm version
 
 > If `helm` or `minikube` is not recognized, restart the terminal or the computer.
 
+### 5. Terraform (for the planned Azure deployment)
+
+Terraform will manage Azure infrastructure. It is not required for local Minikube setup.
+
+**Install Terraform:**
+```powershell
+winget install --exact --id Hashicorp.Terraform
+```
+
+**Verify in a new terminal:**
+```powershell
+terraform version
+```
+
+**Initialize the Azure configuration (from `infrastructure-service`):**
+```powershell
+terraform -chdir=infra/azure init
+```
+
+This downloads the Azure provider; it does not create Azure resources. Keep the generated `.terraform.lock.hcl` in Git so subsequent runs use the same provider version.
+
 ---
 
 ## Start Local Kubernetes Cluster
@@ -151,9 +172,19 @@ secrets:
 
 ## Helm Deployment
 
+### Optional: local deployment script
+
+From `infrastructure-service`, run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Deploy-Local.ps1
+```
+
+The script checks prerequisites, starts Minikube (2 CPUs, 8000 MiB), enables ingress, applies the chart, restarts the seven application deployments to pull the current `develop` images, and waits for Kubernetes rollouts. Wait for CI to finish publishing before running it. SQL/Mongo and other infrastructure are not explicitly restarted. It uses the existing `values.secrets.yaml` and saves timings, pod/image and PVC information under `Devops/_local-results`. It does not reset databases. Browser access stays as described below. Kubernetes readiness does not replace the manual business tests.
+
 ### First Time Installation
 
-**If a previous release exists:**
+**Only for a fresh installation (removes existing local database PVCs):**
 ```bash
 helm uninstall booking -n booking
 ```
@@ -166,6 +197,12 @@ helm install booking . -n booking -f values.yaml -f values.secrets.yaml
 ### Upgrade Existing Installation
 ```bash
 helm upgrade booking . -n booking -f values.yaml -f values.secrets.yaml
+```
+
+**Only on the first upgrade from SQL `emptyDir` to PVC:** SQL starts empty. Once SQL is running, restart these services so their startup migrations create the databases:
+
+```bash
+kubectl rollout restart deployment user-service accommodation-service reservation-service rating-service notification-service -n booking
 ```
 
 ---

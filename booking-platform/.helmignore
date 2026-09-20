@@ -21,3 +21,7 @@
 .idea/
 *.tmproj
 .vscode/
+
+# Private values and previously rendered manifests must never enter chart packages.
+*.secrets.yaml
+rendered.yaml

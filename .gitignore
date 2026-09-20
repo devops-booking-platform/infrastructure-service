@@ -417,3 +417,9 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Terraform downloads and local state/plan files. Keep .terraform.lock.hcl in Git.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
