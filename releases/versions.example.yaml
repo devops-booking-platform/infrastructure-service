@@ -1,0 +1,22 @@
+
+frontend:
+  image:
+    tag: sha-REPLACE
+user:
+  image:
+    tag: sha-REPLACE
+accommodation:
+  image:
+    tag: sha-REPLACE
+reservation:
+  image:
+    tag: sha-REPLACE
+search:
+  image:
+    tag: sha-REPLACE
+rating:
+  image:
+    tag: sha-REPLACE
+notification:
+  image:
+    tag: sha-REPLACE

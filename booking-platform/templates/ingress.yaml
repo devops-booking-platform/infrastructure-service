@@ -6,9 +6,9 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
-  ingressClassName: nginx
+  ingressClassName: {{ .Values.ingress.className | quote }}
   rules:
-    - host: booking.local
+    - host: {{ .Values.ingress.hosts.app | quote }}
       http:
         paths:
           # user-service
@@ -107,7 +107,9 @@ spec:
                 port:
                   number: {{ .Values.frontend.servicePort }}
 
-    - host: seq.booking.local
+    {{- if .Values.ingress.exposeMonitoring }}
+
+    - host: {{ .Values.ingress.hosts.seq | quote }}
       http:
         paths:
           - path: /
@@ -118,7 +120,7 @@ spec:
                 port:
                   number: 80
                   
-    - host: jaeger.booking.local
+    - host: {{ .Values.ingress.hosts.jaeger | quote }}
       http:
         paths:
           - path: /
@@ -129,7 +131,7 @@ spec:
                 port:
                   number: 80
 
-    - host: prometheus.booking.local
+    - host: {{ .Values.ingress.hosts.prometheus | quote }}
       http:
         paths:
           - path: /
@@ -140,7 +142,7 @@ spec:
                 port:
                   number: {{ .Values.prometheus.servicePort }}
 
-    - host: grafana.booking.local
+    - host: {{ .Values.ingress.hosts.grafana | quote }}
       http:
         paths:
           - path: /
@@ -150,3 +152,4 @@ spec:
                 name: grafana
                 port:
                   number: {{ .Values.grafana.servicePort }}
+    {{- end }}

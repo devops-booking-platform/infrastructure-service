@@ -1,0 +1,11 @@
+
+ingress:
+  exposeMonitoring: false
+  hosts:
+    app: booking-aks-bff6a774.newzealandnorth.cloudapp.azure.com
+sqlserver:
+  persistence:
+    storageClass: managed-csi
+mongo:
+  persistence:
+    storageClass: managed-csi

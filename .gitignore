@@ -23,6 +23,10 @@ mono_crash.*
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
+# Deployment version manifests, not compiled release output.
+!/releases/
+/releases/*
+!/releases/*.yaml
 x64/
 x86/
 [Ww][Ii][Nn]32/

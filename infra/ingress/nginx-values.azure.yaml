@@ -1,0 +1,16 @@
+
+controller:
+  replicaCount: 1
+  ingressClass: nginx
+  ingressClassResource:
+    name: nginx
+    enabled: true
+    default: false
+  service:
+    type: LoadBalancer
+    enableHttp: true
+    enableHttps: false
+    externalTrafficPolicy: Local
+    annotations:
+      service.beta.kubernetes.io/azure-dns-label-name: booking-aks-bff6a774
+      service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: /healthz

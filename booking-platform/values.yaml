@@ -1,6 +1,16 @@
 secrets:
   name: devops-secrets
 
+ingress:
+  className: nginx
+  exposeMonitoring: true
+  hosts:
+    app: booking.local
+    seq: seq.booking.local
+    jaeger: jaeger.booking.local
+    prometheus: prometheus.booking.local
+    grafana: grafana.booking.local
+
 notification:
   replicaCount: 1
   image:
@@ -78,6 +88,8 @@ mongo:
     repository: mongo
     tag: "7"
   servicePort: 27017
+  persistence:
+    storageClass: ""
   env:
     MONGO_INITDB_ROOT_USERNAME: root
 
@@ -134,6 +146,7 @@ sqlserver:
   servicePort: 1433
   persistence:
     size: 4Gi
+    storageClass: ""
 
 frontend:
   replicaCount: 1
