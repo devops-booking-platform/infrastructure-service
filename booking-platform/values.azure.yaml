@@ -1,4 +1,7 @@
 
+keyVault:
+  enabled: true
+
 ingress:
   exposeMonitoring: false
   hosts:

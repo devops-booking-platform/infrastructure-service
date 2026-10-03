@@ -1,6 +1,23 @@
 secrets:
   name: devops-secrets
 
+keyVault:
+  enabled: false
+  name: ""
+  tenantId: ""
+  clientId: ""
+  objects:
+    SQLSERVER_SA_PASSWORD: sqlserver-sa-password
+    MONGO_ROOT_PASSWORD: mongo-root-password
+    RABBITMQ_USER: rabbitmq-user
+    RABBITMQ_PASS: rabbitmq-pass
+    CONNSTR_USER: connstr-user
+    CONNSTR_RESERVATION: connstr-reservation
+    CONNSTR_ACCOMMODATION: connstr-accommodation
+    CONNSTR_RATING: connstr-rating
+    CONNSTR_NOTIFICATION: connstr-notification
+    MONGO_CONN_SEARCH: mongo-conn-search
+
 ingress:
   className: nginx
   exposeMonitoring: true

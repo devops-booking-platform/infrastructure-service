@@ -1,3 +1,4 @@
+{{- if not .Values.keyVault.enabled }}
 apiVersion: v1
 kind: Secret
 metadata:
@@ -7,6 +8,7 @@ type: Opaque
 stringData:
   SA_PASSWORD: {{ .Values.secrets.sqlserver.saPassword | quote }}
 ---
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -41,9 +43,22 @@ spec:
                   name: sqlserver-secret
                   key: SA_PASSWORD
           volumeMounts:
+            {{- if .Values.keyVault.enabled }}
+            - name: key-vault
+              mountPath: /mnt/key-vault
+              readOnly: true
+            {{- end }}
             - name: mssqldata
               mountPath: /var/opt/mssql
       volumes:
+        {{- if .Values.keyVault.enabled }}
+        - name: key-vault
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ .Release.Name }}-key-vault
+        {{- end }}
         - name: mssqldata
           persistentVolumeClaim:
             claimName: sqlserver-pvc

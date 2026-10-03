@@ -1,0 +1,35 @@
+{{- if .Values.keyVault.enabled }}
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: {{ .Release.Name }}-key-vault
+  namespace: {{ .Release.Namespace }}
+spec:
+  provider: azure
+  parameters:
+    usePodIdentity: "false"
+    useVMManagedIdentity: "true"
+    userAssignedIdentityID: {{ required "keyVault.clientId is required" .Values.keyVault.clientId | quote }}
+    keyvaultName: {{ required "keyVault.name is required" .Values.keyVault.name | quote }}
+    tenantId: {{ required "keyVault.tenantId is required" .Values.keyVault.tenantId | quote }}
+    objects: |
+      array:
+        {{- range $key, $name := .Values.keyVault.objects }}
+        - |
+          objectName: {{ $name }}
+          objectType: secret
+        {{- end }}
+  secretObjects:
+    - secretName: {{ .Values.secrets.name }}
+      type: Opaque
+      data:
+        {{- range $key, $name := .Values.keyVault.objects }}
+        - objectName: {{ $name }}
+          key: {{ $key }}
+        {{- end }}
+    - secretName: sqlserver-secret
+      type: Opaque
+      data:
+        - objectName: {{ .Values.keyVault.objects.SQLSERVER_SA_PASSWORD }}
+          key: SA_PASSWORD
+{{- end }}

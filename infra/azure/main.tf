@@ -10,7 +10,11 @@ terraform {
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    key_vault {
+      purge_soft_delete_on_destroy = false
+    }
+  }
 
   subscription_id                 = "bff6a774-701a-4987-b913-5288d9ef784e"
   resource_provider_registrations = "none"
@@ -48,6 +52,10 @@ resource "azurerm_kubernetes_cluster" "booking" {
 
   identity {
     type = "SystemAssigned"
+  }
+
+  key_vault_secrets_provider {
+    secret_rotation_enabled = true
   }
 
   network_profile {
