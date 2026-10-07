@@ -100,6 +100,7 @@ accommodation:
     Redis__Password: ""
 
 mongo:
+  enabled: true
   replicaCount: 1
   image:
     repository: mongo
@@ -116,7 +117,7 @@ redis:
     repository: redis
     tag: "7-alpine"
   servicePort: 6379
-  password: false  # Set to true if using password from secrets
+  password: false
 
 search:
   replicaCount: 1
@@ -156,7 +157,8 @@ rating:
     Redis__Password: ""
 
 sqlserver:
-  replicaCount: 1 # Standalone SQL Server: keep one replica on this data volume.
+  enabled: true
+  replicaCount: 1
   image:
     repository: mcr.microsoft.com/mssql/server
     tag: "2022-latest"
@@ -178,9 +180,9 @@ jaeger:
   image:
     repository: jaegertracing/all-in-one
     tag: "1.54"
-  servicePort: 16686   # UI
-  otlpGrpcPort: 4317   # OTLP gRPC
-  otlpHttpPort: 4318   # OTLP HTTP
+  servicePort: 16686
+  otlpGrpcPort: 4317
+  otlpHttpPort: 4318
 
 prometheus:
   enabled: true

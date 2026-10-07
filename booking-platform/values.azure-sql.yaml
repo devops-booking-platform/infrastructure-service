@@ -1,0 +1,7 @@
+sqlserver:
+  enabled: false
+
+ingress:
+  hosts:
+    app: booking-aks-bff6a774.italynorth.cloudapp.azure.com
+

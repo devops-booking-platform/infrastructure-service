@@ -15,12 +15,20 @@ spec:
       labels:
         app: user-service
     spec:
+      {{- if and .Values.keyVault.enabled (not .Values.sqlserver.enabled) }}
+      volumes:
+        {{- include "booking.keyVaultVolume" . | nindent 8 }}
+      {{- end }}
       containers:
         - name: user-service
           image: "{{ .Values.user.image.repository }}:{{ .Values.user.image.tag }}"
           imagePullPolicy: Always
           ports:
             - containerPort: {{ .Values.user.containerPort }}
+          {{- if and .Values.keyVault.enabled (not .Values.sqlserver.enabled) }}
+          volumeMounts:
+            {{- include "booking.keyVaultMount" . | nindent 12 }}
+          {{- end }}
           env:
             {{- range $k, $v := .Values.user.env }}
             - name: {{ $k }}

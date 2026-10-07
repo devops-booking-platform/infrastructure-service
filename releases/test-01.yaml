@@ -1,0 +1,21 @@
+frontend:
+  image:
+    tag: develop
+user:
+  image:
+    tag: develop
+accommodation:
+  image:
+    tag: develop
+reservation:
+  image:
+    tag: develop
+search:
+  image:
+    tag: develop
+rating:
+  image:
+    tag: develop
+notification:
+  image:
+    tag: develop

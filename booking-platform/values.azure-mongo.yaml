@@ -1,0 +1,6 @@
+mongo:
+  enabled: false
+
+keyVault:
+  objects:
+    MONGO_CONN_SEARCH: mongo-conn-search-azure

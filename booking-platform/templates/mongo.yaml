@@ -1,3 +1,4 @@
+{{- if .Values.mongo.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -29,9 +30,11 @@ spec:
                   name: {{ .Values.secrets.name }}
                   key: MONGO_ROOT_PASSWORD
           volumeMounts:
+            {{- include "booking.keyVaultMount" . | nindent 12 }}
             - name: mongo-storage
               mountPath: /data/db
       volumes:
+        {{- include "booking.keyVaultVolume" . | nindent 8 }}
         - name: mongo-storage
           persistentVolumeClaim:
             claimName: mongo-pvc
@@ -67,3 +70,4 @@ spec:
   resources:
     requests:
       storage: 1Gi
+{{- end }}

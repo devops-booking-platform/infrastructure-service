@@ -15,21 +15,27 @@ spec:
     objects: |
       array:
         {{- range $key, $name := .Values.keyVault.objects }}
+        {{- if and (or $.Values.sqlserver.enabled (ne $key "SQLSERVER_SA_PASSWORD")) (or $.Values.mongo.enabled (ne $key "MONGO_ROOT_PASSWORD")) }}
         - |
           objectName: {{ $name }}
           objectType: secret
+        {{- end }}
         {{- end }}
   secretObjects:
     - secretName: {{ .Values.secrets.name }}
       type: Opaque
       data:
         {{- range $key, $name := .Values.keyVault.objects }}
+        {{- if and (or $.Values.sqlserver.enabled (ne $key "SQLSERVER_SA_PASSWORD")) (or $.Values.mongo.enabled (ne $key "MONGO_ROOT_PASSWORD")) }}
         - objectName: {{ $name }}
           key: {{ $key }}
         {{- end }}
+        {{- end }}
+    {{- if .Values.sqlserver.enabled }}
     - secretName: sqlserver-secret
       type: Opaque
       data:
         - objectName: {{ .Values.keyVault.objects.SQLSERVER_SA_PASSWORD }}
           key: SA_PASSWORD
+    {{- end }}
 {{- end }}

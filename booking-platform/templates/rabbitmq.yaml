@@ -15,12 +15,20 @@ spec:
       labels:
         app: rabbitmq
     spec:
+      {{- if and .Values.keyVault.enabled (not .Values.sqlserver.enabled) }}
+      volumes:
+        {{- include "booking.keyVaultVolume" . | nindent 8 }}
+      {{- end }}
       containers:
         - name: rabbitmq
           image: rabbitmq:3-management
           ports:
             - containerPort: 5672
             - containerPort: 15672
+          {{- if and .Values.keyVault.enabled (not .Values.sqlserver.enabled) }}
+          volumeMounts:
+            {{- include "booking.keyVaultMount" . | nindent 12 }}
+          {{- end }}
           env:
             - name: RABBITMQ_DEFAULT_USER
               valueFrom:

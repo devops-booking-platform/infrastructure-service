@@ -20,20 +20,30 @@ provider "azurerm" {
   resource_provider_registrations = "none"
 }
 
-resource "azurerm_resource_group" "booking" {
-  name     = "booking-aks-lab"
-  location = "newzealandnorth"
+data "azurerm_resource_group" "booking" {
+  name = "booking-aks-lab"
+}
+
+variable "aks_location" {
+  description = "AKS region. Use azure-sql.tfvars for the Italy North SQL deployment."
+  type        = string
+  default     = "newzealandnorth"
+}
+
+variable "node_vm_size" {
+  description = "Node VM size. Price and quota must be checked in the selected region."
+  type        = string
+  default     = "Standard_F4ams_v6"
 }
 
 resource "azurerm_kubernetes_cluster" "booking" {
   name                = "booking-aks"
-  location            = azurerm_resource_group.booking.location
-  resource_group_name = azurerm_resource_group.booking.name
-  node_resource_group = "${azurerm_resource_group.booking.name}-nodes"
+  location            = var.aks_location
+  resource_group_name = data.azurerm_resource_group.booking.name
+  node_resource_group = "${data.azurerm_resource_group.booking.name}-nodes"
   dns_prefix          = "booking-aks-lab"
   sku_tier            = "Free"
 
-  # Short-lived lab: upgrades with an extra node need 12 vCPUs; current quota is 10.
   node_os_upgrade_channel = "None"
 
   node_provisioning_profile {
@@ -43,7 +53,7 @@ resource "azurerm_kubernetes_cluster" "booking" {
   default_node_pool {
     name                 = "system"
     node_count           = 2
-    vm_size              = "Standard_F4ams_v6"
+    vm_size              = var.node_vm_size
     auto_scaling_enabled = false
     os_sku               = "Ubuntu2404"
     os_disk_type         = "Managed"

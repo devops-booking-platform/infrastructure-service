@@ -1,3 +1,4 @@
+{{- if .Values.sqlserver.enabled }}
 {{- if not .Values.keyVault.enabled }}
 apiVersion: v1
 kind: Secret
@@ -91,3 +92,4 @@ spec:
   resources:
     requests:
       storage: {{ .Values.sqlserver.persistence.size | quote }}
+{{- end }}

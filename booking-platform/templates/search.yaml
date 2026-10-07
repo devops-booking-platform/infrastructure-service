@@ -15,12 +15,20 @@ spec:
       labels:
         app: search-service
     spec:
+      {{- if and .Values.keyVault.enabled (not .Values.sqlserver.enabled) }}
+      volumes:
+        {{- include "booking.keyVaultVolume" . | nindent 8 }}
+      {{- end }}
       containers:
         - name: search-service
           image: "{{ .Values.search.image.repository }}:{{ .Values.search.image.tag }}"
           imagePullPolicy: Always
           ports:
             - containerPort: {{ .Values.search.containerPort }}
+          {{- if and .Values.keyVault.enabled (not .Values.sqlserver.enabled) }}
+          volumeMounts:
+            {{- include "booking.keyVaultMount" . | nindent 12 }}
+          {{- end }}
           env:
             {{- range $k, $v := .Values.search.env }}
             - name: {{ $k }}

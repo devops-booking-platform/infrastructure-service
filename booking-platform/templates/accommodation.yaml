@@ -15,12 +15,20 @@ spec:
       labels:
         app: accommodation-service
     spec:
+      {{- if and .Values.keyVault.enabled (not .Values.sqlserver.enabled) }}
+      volumes:
+        {{- include "booking.keyVaultVolume" . | nindent 8 }}
+      {{- end }}
       containers:
         - name: accommodation-service
           image: "{{ .Values.accommodation.image.repository }}:{{ .Values.accommodation.image.tag }}"
           imagePullPolicy: Always
           ports:
             - containerPort: {{ .Values.accommodation.containerPort }}
+          {{- if and .Values.keyVault.enabled (not .Values.sqlserver.enabled) }}
+          volumeMounts:
+            {{- include "booking.keyVaultMount" . | nindent 12 }}
+          {{- end }}
           env:
             {{- range $k, $v := .Values.accommodation.env }}
             - name: {{ $k }}

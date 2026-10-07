@@ -1,278 +1,306 @@
-# Infrastructure Service – Local Setup (Windows)
+# Booking Platform — команде за покретање
 
-This repository contains Kubernetes and Helm configuration for the **DevOps Booking Platform**. It is intended for **local development** using **Minikube**.
+PowerShell, из `infrastructure-service`. Покрећи команде редом; ако команда пријави грешку, стани. Прегледај сваки Terraform план пре `apply`.
 
----
+Потребно: Azure CLI, Terraform 1.16+, Helm, kubectl, Python 3.10+ и Chrome. За Minikube још Docker Desktop и Minikube. Сачувај локалне Terraform state фајлове; не уписуј state, планове или лозинке у Git.
 
-## Prerequisites
+## Azure deploy — AKS + Azure SQL + Azure DocumentDB
 
-> **Note:** All instructions below are for **Windows**
+За постојећи кластер и нови image довољни су кораци **1 и 6**. За поновно креирање AKS-а уради све кораке. SQL, DocumentDB и Key Vault су одвојени од AKS-а. Ако SQL и vault још не постоје, после пријаве уради [једнократну припрему](#first-setup). AKS и SQL су у Italy North; бесплатни DocumentDB је у France Central.
 
-### 1. Docker Desktop
+### 1. Пријава и зависности
 
-**Install Docker Desktop:**
-https://www.docker.com/products/docker-desktop/
-
-**Verify installation:**
-```bash
-docker --version
-```
-
-Docker Desktop must be running before starting Minikube.
-
-### 2. kubectl
-
-**Install kubectl:**
-```bash
-winget install Kubernetes.kubectl
-```
-
-**Verify:**
-```bash
-kubectl version --client
-```
-
-### 3. Minikube
-
-**Install Minikube:**
-```bash
-winget install -e --id Kubernetes.minikube
-```
-
-**Verify in new cmd:**
-```bash
-minikube version
-```
-
-### 4. Helm
-
-**Install Helm:**
-```bash
-winget install Helm.Helm
-```
-
-**Verify in new cmd:**
-```bash
-helm version
-```
-
-> If `helm` or `minikube` is not recognized, restart the terminal or the computer.
-
-### 5. Terraform (for the planned Azure deployment)
-
-Terraform will manage Azure infrastructure. It is not required for local Minikube setup.
-
-**Install Terraform:**
 ```powershell
-winget install --exact --id Hashicorp.Terraform
+cd C:\Users\Bogdan\Desktop\Devops\infrastructure-service
+az login
+az account set --subscription bff6a774-701a-4987-b913-5288d9ef784e
+az account show --query "{Name:name,Subscription:id}" -o table
 ```
 
-**Verify in a new terminal:**
+Једном на рачунару и после измене `requirements-smoke.txt`:
+
 ```powershell
-terraform version
+python -m pip install -r .\scripts\requirements-smoke.txt
 ```
 
-**Initialize the Azure configuration (from `infrastructure-service`):**
+### 2. AKS
+
 ```powershell
-terraform -chdir=infra/azure init
+terraform "-chdir=infra/azure" init
+terraform "-chdir=infra/azure" plan "-var-file=azure-sql.tfvars" "-out=aks.tfplan"
+terraform "-chdir=infra/azure" apply "aks.tfplan"
 ```
 
-This downloads the Azure provider; it does not create Azure resources. Keep the generated `.terraform.lock.hcl` in Git so subsequent runs use the same provider version.
+### 3. Ingress
 
----
-
-## Start Local Kubernetes Cluster
-
-**Start Minikube:**
-```bash
-minikube start
+```powershell
+terraform "-chdir=infra/azure-ingress" init
+terraform "-chdir=infra/azure-ingress" plan "-out=ingress.tfplan"
+terraform "-chdir=infra/azure-ingress" apply "ingress.tfplan"
 ```
 
-**Verify cluster status:**
-```bash
-kubectl get nodes
+### 4. Лозинка за SQL Terraform
+
+Кораке 4 и 5 покрени у истом терминалу. Ово није потребно за обичан Helm деплој из корака 6.
+
+```powershell
+$env:TF_VAR_administrator_password = az keyvault secret show --vault-name kv-booking-bff6a774 --name sql-admin-password --query value -o tsv --only-show-errors
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($env:TF_VAR_administrator_password)) {
+    Remove-Item Env:TF_VAR_administrator_password -ErrorAction SilentlyContinue
+    throw 'SQL password was not loaded. Stop here.'
+}
 ```
 
----
+### 5. SQL firewall — твоја адреса и излазне адресе AKS-а
 
-## Create Namespace
+Понови после поновног креирања AKS-а или промене своје IP адресе. При сваком наредном SQL `plan/apply` проследи цео скуп адреса; празна променљива може уклонити постојећа правила.
 
-**Create the booking namespace:**
-```bash
-kubectl create namespace booking
+```powershell
+$sqlClientIp = (Invoke-RestMethod 'https://api.ipify.org').Trim()
+$sqlAllowed = @{ operator = $sqlClientIp }
+$outboundIds = az aks show --subscription bff6a774-701a-4987-b913-5288d9ef784e -g booking-aks-lab -n booking-aks --query "networkProfile.loadBalancerProfile.effectiveOutboundIPs[].id" -o tsv
+if ($LASTEXITCODE -ne 0 -or -not $outboundIds) { throw 'AKS outbound IPs not found.' }
+$i = 0
+foreach ($id in $outboundIds) {
+    $ip = az network public-ip show --ids $id --query ipAddress -o tsv
+    if ($LASTEXITCODE -ne 0 -or -not $ip) { throw 'Public IP lookup failed.' }
+    $sqlAllowed["aks-$i"] = $ip
+    $i++
+}
+$env:TF_VAR_allowed_ipv4 = $sqlAllowed | ConvertTo-Json -Compress
 ```
 
-**If it already exists:**
-```bash
-kubectl get namespaces
+```powershell
+terraform "-chdir=infra/azure-sql" init
+terraform "-chdir=infra/azure-sql" plan "-out=sql-network.tfplan"
+terraform "-chdir=infra/azure-sql" apply "sql-network.tfplan"
+Remove-Item Env:TF_VAR_administrator_password -ErrorAction SilentlyContinue
 ```
 
----
+### 5а. Azure Mongo — прво креирање и ажурирање firewall-а
 
-## Infrastructure Components
+Први пут региструј provider:
 
-This Helm chart deploys the following components:
+```powershell
+az provider register --namespace Microsoft.DocumentDB --subscription bff6a774-701a-4987-b913-5288d9ef784e --wait
+```
 
-### Microservices
-- **user-service** - User authentication and management
-- **reservation-service** - Booking reservations
-- **accommodation-service** - Accommodation management
-- **rating-service** - Ratings and reviews
-- **search-service** - Search functionality
-- **notification-service** - Notifications
-- **frontend** - Angular application
+У истом терминалу после корака 5 (користи исти `TF_VAR_allowed_ipv4`), покрени и после сваког поновног креирања AKS-а:
 
-### Databases & Storage
-- **SQL Server** - Relational database for microservices
-- **MongoDB** - NoSQL database for search service
-- **Redis** - In-memory cache for visitor tracking and session management
+```powershell
+terraform "-chdir=infra/azure-mongo" init
+terraform "-chdir=infra/azure-mongo" plan "-out=mongo.tfplan"
+terraform "-chdir=infra/azure-mongo" apply "mongo.tfplan"
+terraform "-chdir=infra/azure-mongo" output mongo
+```
 
-### Infrastructure Services
-- **RabbitMQ** - Message broker for event-driven communication
-- **Seq** - Centralized logging
-- **Jaeger** - Distributed tracing
-- **Prometheus** - Metrics collection and monitoring
-- **Grafana** - Metrics visualization and dashboards
+У плану мора бити `compute_tier = "Free"`; нема преласка на плаћени пакет ако бесплатни није доступан. Terraform једном генерише јаку лозинку од 32 знака, чува је у Key Vault-у као `mongo-azure-admin-password` и уписује connection string у `mongo-conn-search-azure`. Постојећи `mongo-root-password` се не мења. Лозинка остаје иста при наредним покретањима док је Terraform state сачуван. Лозинка и connection string постоје у локалном state-у: не шаљи state/план у Git. Нема ручног копирања лозинке или connection string-а.
 
----
+Први деплој са `-AzureMongo` уклања стари Mongo под и PVC. Подаци се **не преносе**; претрага почиње празна. Стари SQL смештаји се не индексирају аутоматски — за проверу направи нови смештај и доступност. Minikube задржава локални Mongo.
 
-## Secrets Configuration (Required)
+Free пакет: 32 GB, без уграђеног backup/restore-а; паузира се после 60 дана неактивности. [Microsoft услови](https://learn.microsoft.com/en-us/azure/documentdb/free-tier).
 
-A secrets file is required to run the system locally.
+### 6. Деплој апликације и smoke тест
 
-### 1. Create `values.secrets.yaml` in infrastructure-service\booking-platform
+Сачекај да CI објави image-е. `releases/test-01.yaml` тренутно користи `develop` за свих седам компоненти.
 
-> This file must **not** be committed to Git. Add it to `.gitignore`.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Deploy-Azure.ps1 -VersionsFile .\releases\test-01.yaml -AzureSql -AzureMongo
+```
 
-**Example `values.secrets.yaml`:**
+Скрипта отвара Chrome за Selenium тест; не затварај прозор док ради. Пад теста не враћа претходни деплој аутоматски. После преласка увек проследи `-AzureMongo`; без њега се поново користи Mongo у кластеру. Smoke проверава празну претрагу; за DocumentDB провери и креирање смештаја/доступности → претрагу → одобравање/отказивање резервације.
+
+Апликација: http://booking-aks-bff6a774.italynorth.cloudapp.azure.com
+
+```powershell
+kubectl --context booking-aks -n booking get pods -o wide
+kubectl --context booking-aks -n booking get pvc,ingress
+```
+
+Само smoke тест, без деплоја:
+
+```powershell
+python .\scripts\smoke.py http://booking-aks-bff6a774.italynorth.cloudapp.azure.com --headed
+```
+
+Ако први старт врати 502, провери логове пре поновног теста. Познат проблем: паузирана SQL база може вратити 40613 при буђењу, а readiness провера још није додата.
+
+```powershell
+kubectl --context booking-aks -n booking logs deployment/user-service --tail=80
+kubectl --context booking-aks -n booking logs deployment/user-service --previous --tail=80
+```
+
+## Port-forward — Grafana, Prometheus, Jaeger, Seq
+
+Користи док AKS ради. Свака port-forward команда иде у засебан терминал; остави га отвореним. `Ctrl+C` прекида прослеђивање.
+
+Ако `booking-aks` context није подешен:
+
+```powershell
+az aks get-credentials --subscription bff6a774-701a-4987-b913-5288d9ef784e -g booking-aks-lab -n booking-aks --context booking-aks --overwrite-existing
+```
+
+**Grafana:** http://localhost:3000 — lab пријава `admin` / `admin`, ако није промењена.
+
+```powershell
+kubectl --context booking-aks -n booking port-forward service/grafana 3000:3000
+```
+
+**Prometheus:** http://localhost:9090 — targets: http://localhost:9090/targets
+
+```powershell
+kubectl --context booking-aks -n booking port-forward service/prometheus 9090:9090
+```
+
+**Jaeger:** http://localhost:16687
+
+```powershell
+kubectl --context booking-aks -n booking port-forward service/jaeger 16687:80
+```
+
+**Seq:** http://localhost:8081
+
+```powershell
+kubectl --context booking-aks -n booking port-forward service/seq 8081:80
+```
+
+## Azure гашење — SQL, DocumentDB и Key Vault остају
+
+Изврши редом. Ово брише AKS и његове дискове. Azure DocumentDB остаје; ако још користиш Mongo у кластеру, његови подаци се губе. Не бриши `booking-aks-lab` нити покрећи destroy за `infra/azure-key-vault`, `infra/azure-sql` или `infra/azure-mongo` при редовном гашењу.
+
+```powershell
+helm uninstall booking --kube-context booking-aks -n booking --wait --timeout 10m
+```
+
+```powershell
+terraform "-chdir=infra/azure-ingress" plan -destroy "-out=ingress-destroy.tfplan"
+terraform "-chdir=infra/azure-ingress" apply "ingress-destroy.tfplan"
+```
+
+```powershell
+terraform "-chdir=infra/azure" plan -destroy "-var-file=azure-sql.tfvars" "-out=aks-destroy.tfplan"
+terraform "-chdir=infra/azure" apply "aks-destroy.tfplan"
+```
+
+Провери шта је остало; празан AKS списак сам по себи није потврда да је цео Azure трошак нула:
+
+```powershell
+az resource list --subscription bff6a774-701a-4987-b913-5288d9ef784e --query "[].{Name:name,Type:type,Group:resourceGroup}" -o table
+```
+
+<a id="first-setup"></a>
+
+## Једнократна припрема — само ако vault и базе још не постоје
+
+Већ урађено за тренутно окружење. Ако ресурси постоје, а локални state недостаје, прво врати или увези state; не примењуј план који поново креира постојеће ресурсе.
+
+### 1. Key Vault
+
+```powershell
+terraform "-chdir=infra/azure-key-vault" init
+terraform "-chdir=infra/azure-key-vault" plan "-out=vault.tfplan"
+terraform "-chdir=infra/azure-key-vault" apply "vault.tfplan"
+```
+
+У порталу: **Key Vault → kv-booking-bff6a774 → Secrets → Generate/Import**. Додај `sql-admin-password` са јаком SQL администраторском лозинком. Не мењај постојећу лозинку ако SQL сервер већ постоји.
+
+За апликацију су потребни и `rabbitmq-user`, `rabbitmq-pass`, `mongo-root-password`, `mongo-conn-search`, као и пет `connstr-*` тајни из табеле испод. MongoDB connection string мора користити hostname `mongo` и лозинку која одговара `mongo-root-password`.
+
+### 2. Пет SQL база
+
+Учитај лозинку блоком из корака **Azure deploy → 4**, па у истом терминалу:
+
+```powershell
+az provider register --namespace Microsoft.Sql --subscription bff6a774-701a-4987-b913-5288d9ef784e --wait
+$sqlClientIp = (Invoke-RestMethod 'https://api.ipify.org').Trim()
+$env:TF_VAR_allowed_ipv4 = @{ operator = $sqlClientIp } | ConvertTo-Json -Compress
+terraform "-chdir=infra/azure-sql" init
+terraform "-chdir=infra/azure-sql" plan "-out=sql.tfplan"
+terraform "-chdir=infra/azure-sql" apply "sql.tfplan"
+```
+
+Провери да свих пет има `Free=True` и `OnLimit=AutoPause`:
+
+```powershell
+az sql db list --subscription bff6a774-701a-4987-b913-5288d9ef784e -g booking-aks-lab -s sql-booking-it-bff6a774 --query "[?name!='master'].{Name:name,State:status,Free:useFreeLimit,OnLimit:freeLimitExhaustionBehavior}" -o table
+```
+
+### 3. SQL корисници и connection string-ови
+
+У свакој бази отвори **Query editor**, пријави се Microsoft Entra налогом и покрени [configure-service-user.sql](infra/azure-sql/configure-service-user.sql). Замени лозинку **само у `DECLARE @password`**, не и у `IF` провери. Користи различиту лозинку од најмање 16 знакова са великим/малим словима, бројевима и симболима. Не чувај попуњен SQL фајл у Git-у. Скрипта не мења лозинку већ постојећег корисника.
+
+| База | Корисник | Key Vault тајна |
+| --- | --- | --- |
+| UserServiceDb | booking_user | connstr-user |
+| AccommodationServiceDb | booking_accommodation | connstr-accommodation |
+| ReservationServiceDb | booking_reservation | connstr-reservation |
+| RatingServiceDb | booking_rating | connstr-rating |
+| NotificationServiceDb | booking_notification | connstr-notification |
+
+За сваку тајну: **Secrets → назив тајне → New Version → Secret value → Create**. Замени базу, корисника и лозинку у овом шаблону:
+
+```text
+Server=tcp:sql-booking-it-bff6a774.database.windows.net,1433;Database=<DATABASE>;User ID=<USER>;Password=<PASSWORD>;Encrypt=True;TrustServerCertificate=False;Connect Timeout=120;
+```
+
+За овај ручни шаблон користи лозинку без `;` и наводника. По завршетку настави са **Azure deploy → 2. AKS**.
+
+## Minikube deploy
+
+Потребан је локални `booking-platform/values.secrets.yaml` са SQL/Mongo/RabbitMQ вредностима; не користи Azure SQL connection string-ове. Ако фајл још немаш, направи га по шаблону испод и замени `<SQL_PASSWORD>` и `<MONGO_PASSWORD>`:
+
 ```yaml
 secrets:
   sqlserver:
-    saPassword: "Your_Strong_Password123!"
-  
+    saPassword: "<SQL_PASSWORD>"
   rabbitmq:
     user: "guest"
     pass: "guest"
-  
   mongo:
-    rootPassword: "rootpass"
-  
+    rootPassword: "<MONGO_PASSWORD>"
   connStrings:
-    user: "Server=devops-sql,1433;Database=UserServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
-    reservation: "Server=devops-sql,1433;Database=ReservationServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
-    accommodation: "Server=devops-sql,1433;Database=AccommodationServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
-    rating: "Server=devops-sql,1433;Database=RatingServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
-    notification: "Server=devops-sql,1433;Database=NotificationServiceDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True"
-  
+    user: "Server=devops-sql,1433;Database=UserServiceDb;User Id=sa;Password=<SQL_PASSWORD>;TrustServerCertificate=True"
+    accommodation: "Server=devops-sql,1433;Database=AccommodationServiceDb;User Id=sa;Password=<SQL_PASSWORD>;TrustServerCertificate=True"
+    reservation: "Server=devops-sql,1433;Database=ReservationServiceDb;User Id=sa;Password=<SQL_PASSWORD>;TrustServerCertificate=True"
+    rating: "Server=devops-sql,1433;Database=RatingServiceDb;User Id=sa;Password=<SQL_PASSWORD>;TrustServerCertificate=True"
+    notification: "Server=devops-sql,1433;Database=NotificationServiceDb;User Id=sa;Password=<SQL_PASSWORD>;TrustServerCertificate=True"
   mongoConn:
-    search: "mongodb://root:rootpass@mongo:27017/admin"
+    search: "mongodb://root:<MONGO_PASSWORD>@mongo:27017/admin"
 ```
 
----
+1. Покрени Docker Desktop (Linux containers), па:
 
-## Helm Deployment
+   ```powershell
+   minikube start -p minikube --driver=docker --cpus=2 --memory=8000
+   minikube addons enable ingress -p minikube
+   ```
 
-### Optional: local deployment script
+2. У `C:\Windows\System32\drivers\etc\hosts`, као администратор, додај:
 
-From `infrastructure-service`, run:
+   ```text
+   127.0.0.1 booking.local
+   127.0.0.1 grafana.booking.local
+   127.0.0.1 prometheus.booking.local
+   127.0.0.1 jaeger.booking.local
+   127.0.0.1 seq.booking.local
+   ```
+
+3. У засебном администраторском терминалу покрени и остави:
+
+   ```powershell
+   minikube tunnel -p minikube
+   ```
+
+4. Са инсталираним Python зависностима из првог одељка, покрени деплој:
+
+   ```powershell
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Deploy-Local.ps1 -VersionsFile .\releases\test-01.yaml
+   ```
+
+Апликација: http://booking.local. За локални port-forward користи исте команде као изнад, са `--context minikube`.
+
+Заустављање без брисања кластера:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Deploy-Local.ps1
+minikube stop -p minikube
 ```
-
-The script checks prerequisites, starts Minikube (2 CPUs, 8000 MiB), enables ingress, applies the chart, restarts the seven application deployments to pull the current `develop` images, and waits for Kubernetes rollouts. Wait for CI to finish publishing before running it. SQL/Mongo and other infrastructure are not explicitly restarted. It uses the existing `values.secrets.yaml` and saves timings, pod/image and PVC information under `Devops/_local-results`. It does not reset databases. Browser access stays as described below. Kubernetes readiness does not replace the manual business tests.
-
-### First Time Installation
-
-**Only for a fresh installation (removes existing local database PVCs):**
-```bash
-helm uninstall booking -n booking
-```
-
-**Install the application:**
-```bash
-helm install booking . -n booking -f values.yaml -f values.secrets.yaml
-```
-
-### Upgrade Existing Installation
-```bash
-helm upgrade booking . -n booking -f values.yaml -f values.secrets.yaml
-```
-
-**Only on the first upgrade from SQL `emptyDir` to PVC:** SQL starts empty. Once SQL is running, restart these services so their startup migrations create the databases:
-
-```bash
-kubectl rollout restart deployment user-service accommodation-service reservation-service rating-service notification-service -n booking
-```
-
----
-
-## Verify Deployment
-
-**Check pod status:**
-```bash
-kubectl get pods -n booking
-```
-
-> All pods should be in `Running` state (or `Completed` for init jobs).
-
----
-
-## Local Host Configuration
-
-### Edit Hosts File
-
-1. Open **Notepad as Administrator**
-2. Open the file: `C:\Windows\System32\drivers\etc\hosts`
-3. Add the following entries:
-```
-127.0.0.1 booking.local
-127.0.0.1 kubernetes.docker.internal
-127.0.0.1 seq.booking.local
-127.0.0.1 jaeger.booking.local
-127.0.0.1 prometheus.booking.local
-127.0.0.1 grafana.booking.local
-```
-
-4. Save the file
-
----
-
-5. Run the following command in Admin Powershell:
-```
-minikube tunnel
-```
-## Accessing the Application
-
-### With Ingress
-
-- **Frontend:** http://booking.local
-- **Seq:** http://seq.booking.local
-- **Jaeger:** http://jaeger.booking.local
-- **Prometheus:** http://prometheus.booking.local
-- **Grafana:** http://grafana.booking.local (login: admin/admin)
-
-### Without Ingress
-
-Use `kubectl port-forward` to access frontend and services individually.
-
----
-
-## Troubleshooting
-
-### `helm` or `minikube` not found
-
-**Solution:** Restart terminal or system.
-
-### Pod in `CrashLoopBackOff`
-
-**Check logs:**
-```bash
-kubectl logs <pod-name> -n booking
-```
-
-### Minikube fails to start
-
-**Solution:** Ensure Docker Desktop is running.
-
----
